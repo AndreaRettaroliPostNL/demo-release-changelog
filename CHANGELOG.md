@@ -1,6 +1,18 @@
 
 
 
+
+## [0.1.0] - 2025-08-25
+
+### Bug Fixes
+
+* **[DAIP-1281](https://postnl.atlassian.net/browse/DAIP-1281:** fix([DAIP-1281](https://postnl.atlassian.net/browse/DAIP-1281)): test overriding coverage ([1075ab2](https://github.com/AndreaRettaroliPostNL/demo-release-changelog/commit/1075ab280c7607fc7e2c4107b9d6ec2320fc87b5))
+
+### Other Changes
+
+* docs([DAIP-1281](https://postnl.atlassian.net/browse/DAIP-1281)): lalala ([5d2376f](https://github.com/AndreaRettaroliPostNL/demo-release-changelog/commit/5d2376f6d7b1b94a1ace62e9bd622aca3d9d00b8))
+* perf([DAIP-1281](https://postnl.atlassian.net/browse/DAIP-1281)): lalala ([d39762c](https://github.com/AndreaRettaroliPostNL/demo-release-changelog/commit/d39762c24a9881b4c0798fafe016980caddf8fb0))
+
 ## [0.0.10] - 2025-08-25
 
 ### Features
