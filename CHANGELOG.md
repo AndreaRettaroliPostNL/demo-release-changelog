@@ -5,6 +5,14 @@
 
 
 
+
+## [0.1.5] - 2025-08-25
+
+
+### Features
+
+* **testbraking:** add new node breaking version ([45475be](https://github.com/AndreaRettaroliPostNL/demo-release-changelog/commit/45475be9319da80106bf06c5d52e4813fc9d561a))
+
 ## [0.1.4] - 2025-08-25
 
 
