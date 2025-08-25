@@ -3,9 +3,6 @@ name: Generate changelog on release
 on:
   release:
     types: [published]
-  push:
-    tags:
-      - 'v*'
 
 permissions:
   contents: write
