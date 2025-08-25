@@ -63,17 +63,57 @@ if (prevTag) {
     } else {
       console.log(`Found ${commits.length} commits, generating changelog...`);
       
-      // Try conventional-changelog with proper git range
-      const pkgFlag = fs.existsSync(path.join(process.cwd(), "package.json")) ? "--pkg package.json" : "";
-      const cmd = `git log ${prevTag}..${currentTag} --format="%H" | npx conventional-changelog ${preset} ${pkgFlag}`;
-      try {
-        changelogContent = sh(cmd);
-      } catch (error) {
-        console.log("Conventional changelog failed, trying alternative approach...");
-        // Alternative: generate from scratch and take only the latest section
-        const fullChangelog = sh(`npx conventional-changelog ${preset} ${pkgFlag} -r 1`);
-        changelogContent = fullChangelog;
+      // Skip conventional-changelog and use manual parsing for better reliability
+      console.log("Using manual commit parsing for reliable changelog generation...");
+      
+      // Parse commits manually and format them
+      const gitLog = sh(`git log ${prevTag}..${currentTag} --pretty=format:"%s|||%h|||%H" --reverse`);
+      const commitLines = gitLog.split('\n').filter(Boolean);
+      
+      const features = [];
+      const fixes = [];
+      const others = [];
+      
+      commitLines.forEach(commitLine => {
+        const [message, shortHash, fullHash] = commitLine.split('|||');
+        const link = `([${shortHash}](https://github.com/AndreaRettaroliPostNL/demo-release-changelog/commit/${fullHash}))`;
+        
+        if (message.startsWith('feat')) {
+          const cleanMessage = message.replace(/^feat(\([^)]*\))?\s*:\s*/, '');
+          const scope = message.match(/^feat\(([^)]*)\)/)?.[1];
+          features.push(scope ? `* **${scope}:** ${cleanMessage} ${link}` : `* ${cleanMessage} ${link}`);
+        } else if (message.startsWith('fix')) {
+          const cleanMessage = message.replace(/^fix(\([^)]*\))?\s*:\s*/, '');
+          const scope = message.match(/^fix\(([^)]*)\)/)?.[1];
+          fixes.push(scope ? `* **${scope}:** ${cleanMessage} ${link}` : `* ${cleanMessage} ${link}`);
+        } else if (!message.startsWith('Merge') && !message.startsWith('docs(changelog)')) {
+          // Include other conventional commits but skip merge commits and changelog docs
+          others.push(`* ${message} ${link}`);
+        }
+      });
+      
+      // Build the changelog content
+      const versionWithoutV = currentTag.replace(/^v/, '');
+      const today = new Date().toISOString().split('T')[0];
+      let sections = [`## [${versionWithoutV}] - ${today}`, ''];
+      
+      if (features.length > 0) {
+        sections.push('### Features', '', ...features, '');
       }
+      
+      if (fixes.length > 0) {
+        sections.push('### Bug Fixes', '', ...fixes, '');
+      }
+      
+      if (others.length > 0) {
+        sections.push('### Other Changes', '', ...others, '');
+      }
+      
+      if (features.length === 0 && fixes.length === 0 && others.length === 0) {
+        sections.push('*No notable changes*', '');
+      }
+      
+      changelogContent = sections.join('\n');
     }
   } catch (error) {
     console.error("Error getting commits:", error.message);
