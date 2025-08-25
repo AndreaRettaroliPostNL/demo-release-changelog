@@ -6,6 +6,23 @@
 
 
 
+
+## [0.1.6] - 2025-08-25
+
+
+### ⚠ BREAKING CHANGES
+
+* **logger:** add new breaking feature 2
+
+### Features
+
+* **logger:** add new breaking feature 2 ([c7dcba4](https://github.com/AndreaRettaroliPostNL/demo-release-changelog/commit/c7dcba490c11bd90f5f059eee99dba35ecb04c4b))
+
+
+### Performance Improvements
+
+* **test:** test ([cef7740](https://github.com/AndreaRettaroliPostNL/demo-release-changelog/commit/cef7740f69eeed7b6aeac8de0ae35f7c3acf114f))
+
 ## [0.1.5] - 2025-08-25
 
 
