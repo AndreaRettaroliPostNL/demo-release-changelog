@@ -72,6 +72,9 @@ if (prevTag) {
       
       const features = [];
       const fixes = [];
+      const performance = [];
+      const docs = [];
+      const refactoring = [];
       const others = [];
       
       commitLines.forEach(commitLine => {
@@ -86,8 +89,23 @@ if (prevTag) {
           const cleanMessage = message.replace(/^fix(\([^)]*\))?\s*:\s*/, '');
           const scope = message.match(/^fix\(([^)]*)\)/)?.[1];
           fixes.push(scope ? `* **${scope}:** ${cleanMessage} ${link}` : `* ${cleanMessage} ${link}`);
+        } else if (message.startsWith('perf')) {
+          const cleanMessage = message.replace(/^perf(\([^)]*\))?\s*:\s*/, '');
+          const scope = message.match(/^perf\(([^)]*)\)/)?.[1];
+          performance.push(scope ? `* **${scope}:** ${cleanMessage} ${link}` : `* ${cleanMessage} ${link}`);
+        } else if (message.startsWith('docs')) {
+          const cleanMessage = message.replace(/^docs(\([^)]*\))?\s*:\s*/, '');
+          const scope = message.match(/^docs\(([^)]*)\)/)?.[1];
+          // Skip changelog documentation commits
+          if (!cleanMessage.toLowerCase().includes('changelog') && !cleanMessage.toLowerCase().includes('update for v')) {
+            docs.push(scope ? `* **${scope}:** ${cleanMessage} ${link}` : `* ${cleanMessage} ${link}`);
+          }
+        } else if (message.startsWith('refactor')) {
+          const cleanMessage = message.replace(/^refactor(\([^)]*\))?\s*:\s*/, '');
+          const scope = message.match(/^refactor\(([^)]*)\)/)?.[1];
+          refactoring.push(scope ? `* **${scope}:** ${cleanMessage} ${link}` : `* ${cleanMessage} ${link}`);
         } else if (!message.startsWith('Merge') && !message.startsWith('docs(changelog)')) {
-          // Include other conventional commits but skip merge commits and changelog docs
+          // Include other commits that don't match conventional patterns (including chore)
           others.push(`* ${message} ${link}`);
         }
       });
@@ -105,11 +123,24 @@ if (prevTag) {
         sections.push('### Bug Fixes', '', ...fixes, '');
       }
       
+      if (performance.length > 0) {
+        sections.push('### Performance', '', ...performance, '');
+      }
+      
+      if (docs.length > 0) {
+        sections.push('### Documentation', '', ...docs, '');
+      }
+      
+      if (refactoring.length > 0) {
+        sections.push('### Refactoring', '', ...refactoring, '');
+      }
+      
       if (others.length > 0) {
         sections.push('### Other Changes', '', ...others, '');
       }
       
-      if (features.length === 0 && fixes.length === 0 && others.length === 0) {
+      if (features.length === 0 && fixes.length === 0 && performance.length === 0 && 
+          docs.length === 0 && refactoring.length === 0 && others.length === 0) {
         sections.push('*No notable changes*', '');
       }
       
