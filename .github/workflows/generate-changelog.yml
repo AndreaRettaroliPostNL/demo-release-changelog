@@ -3,6 +3,9 @@ name: Generate changelog on release
 on:
   release:
     types: [published]
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: write
@@ -11,58 +14,45 @@ jobs:
   changelog:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout default branch (full history)
+      - name: Checkout full history
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: ${{ github.event.repository.default_branch }}
 
-      - name: Generate CHANGELOG for this release tag (explicit range)
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Generate CHANGELOG using custom script
         env:
-          CUR: ${{ github.event.release.tag_name }}   # e.g., v0.0.3
-        run: |
-          # Ensure tags are present
-          git fetch --tags --force
-
-          if ! git rev-parse "$CUR" >/dev/null 2>&1; then
-            echo "Tag $CUR not found locally."
-            exit 1
-          fi
-
-          # Find previous semver tag (sorted by version)
-          PREV=$(git tag --list --sort=-v:refname | awk -v cur="$CUR" '$0==cur{getline; print; exit}')
-          echo "Current tag: $CUR"
-          echo "Previous tag: ${PREV:-<none>}"
-
-          # Detect tag prefix (e.g., 'v' in v0.0.3)
-          PREFIX=$(echo "$CUR" | sed -E 's/^([^0-9]*).*/\1/')
-
-          # Generate/update CHANGELOG.md for the exact range
-          if [ -n "$PREV" ]; then
-            npx -y conventional-changelog -p conventionalcommits -i CHANGELOG.md -s \
-              --from "$PREV" --to "$CUR" \
-              --tag "$CUR" \
-              --tag-prefix "$PREFIX"
-          else
-            # First release: generate notes up to CUR
-            npx -y conventional-changelog -p conventionalcommits -i CHANGELOG.md -s \
-              --tag "$CUR" \
-              --tag-prefix "$PREFIX"
-          fi
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          RELEASE_TAG: ${{ github.event.release.tag_name || github.ref_name }}
+        run: node .github/scripts/changelog-from.js
 
       - name: Commit changelog
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add CHANGELOG.md
-          git commit -m "docs(changelog): update for ${{ github.event.release.tag_name }}" || echo "No changes"
-          git push origin HEAD:${{ github.event.repository.default_branch }}
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "docs(changelog): update for ${{ github.event.release.tag_name || github.ref_name }}"
+            git push origin HEAD:${{ github.event.repository.default_branch }}
+          fi
 
+      # Optional: update the Release notes body to match the same content (only for releases)
       - name: Update GitHub Release body with latest section
+        if: github.event_name == 'release'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.event.release.tag_name }}
         run: |
-          # Grab the newest section (from first '## ' to next '## ')
+          # Extract topmost version section from the changelog and set as release body
           awk 'BEGIN{p=0} /^## /{if(p) exit; p=1} {if(p) print}' CHANGELOG.md > .notes.md
           gh release edit "$TAG" --notes-file .notes.md
