@@ -3,6 +3,14 @@
 
 
 
+
+## [0.1.2] - 2025-08-25
+
+
+### Features
+
+* **test:** with new setup ([0905e43](https://github.com/AndreaRettaroliPostNL/demo-release-changelog/commit/0905e43df6e153734812ff067499e9a272b74068))
+
 ## [0.1.1] - 2025-08-25
 
 ### Features
