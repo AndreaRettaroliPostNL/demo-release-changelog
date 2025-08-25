@@ -4,6 +4,18 @@
 
 
 
+
+## [0.1.4] - 2025-08-25
+
+
+### ⚠ BREAKING CHANGES
+
+* **api:** This removes the old API endpoint
+
+### Features
+
+* **api:** add new breaking feature ([a9c2eff](https://github.com/AndreaRettaroliPostNL/demo-release-changelog/commit/a9c2eff0d2ec9e714dac4957f3678f44550535a1))
+
 ## [0.1.2] - 2025-08-25
 
 
