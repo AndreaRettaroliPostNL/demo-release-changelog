@@ -4,8 +4,8 @@
     { "type": "feat", "section": "Features" },
     { "type": "fix", "section": "Bug Fixes" },
     { "type": "perf", "section": "Performance" },
-    { "type": "docs", "section": "Docs" },
+    { "type": "docs", "section": "Documentation" },
     { "type": "refactor", "section": "Refactoring" },
-    { "type": "chore", "section": "Chores", "hidden": false }
+    { "type": "chore", "section": "Other Changes" }
   ]
 }
