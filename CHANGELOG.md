@@ -2,6 +2,34 @@
 
 
 
+
+## [0.1.1] - 2025-08-25
+
+### Features
+
+* **test:** nanananan ([22bf6ec](https://github.com/AndreaRettaroliPostNL/demo-release-changelog/commit/22bf6ec9587749c63c2809e437e304436a38b047))
+
+### Bug Fixes
+
+* **test:** test ([60c7c56](https://github.com/AndreaRettaroliPostNL/demo-release-changelog/commit/60c7c56a35c4bfeb95f040b48cd57787929fc68c))
+
+### Performance
+
+* **including-others:** refactor ([14b7597](https://github.com/AndreaRettaroliPostNL/demo-release-changelog/commit/14b759797ebded1b9b78808a4e054d363e4e6e6c))
+* **[DAIP-1281](https://postnl.atlassian.net/browse/DAIP-1281:** perf([DAIP-1281](https://postnl.atlassian.net/browse/DAIP-1281)): lalal ([a8909cc](https://github.com/AndreaRettaroliPostNL/demo-release-changelog/commit/a8909cc7875af7dab5084266e326d8cc31dfe93f))
+
+### Documentation
+
+* **test:** sasasa ([46b99f9](https://github.com/AndreaRettaroliPostNL/demo-release-changelog/commit/46b99f9845fed0f681cca9c3e2e37652cc1bdbc1))
+
+### Refactoring
+
+* **test:** sasasa ([1807881](https://github.com/AndreaRettaroliPostNL/demo-release-changelog/commit/1807881fa12f0bf5315369998b20569f3f9100c1))
+
+### Other Changes
+
+* chore(lala): sasasa ([1dfea43](https://github.com/AndreaRettaroliPostNL/demo-release-changelog/commit/1dfea4394a8069906a70fe7ab94bae6a1ba9f20c))
+
 ## [0.1.0] - 2025-08-25
 
 ### Bug Fixes
