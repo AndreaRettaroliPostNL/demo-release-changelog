@@ -1,5 +1,12 @@
 
 
+
+## [0.0.10] - 2025-08-25
+
+### Features
+
+* **test:** update script ([951d655](https://github.com/AndreaRettaroliPostNL/demo-release-changelog/commit/951d65514b6cfff490aedcc34baba0f884837fb4))
+
 ## [0.0.9] - 2025-08-25
 
 *No notable changes*
