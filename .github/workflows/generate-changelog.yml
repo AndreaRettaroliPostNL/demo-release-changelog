@@ -1,0 +1,49 @@
+name: Generate changelog on release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Generate CHANGELOG.md for this tag
+        env:
+          GITHUB_REF_NAME: ${{ github.event.release.tag_name }}
+        run: |
+          node .github/scripts/changelog-from.js
+
+      - name: Commit changelog
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "docs(changelog): update for ${{ github.event.release.tag_name }}" || echo "No changes"
+          git push
+
+      # Optional: update the Release notes body to match the same content
+      - name: Update GitHub Release body with latest section
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          # Extract topmost version section from the changelog and set as release body
+          awk 'BEGIN{p=0} /^## /{if(p) exit; p=1} {if(p) print}' CHANGELOG.md > .notes.md
+          gh release edit "$TAG" --notes-file .notes.md
