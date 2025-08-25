@@ -39,126 +39,96 @@ const prevTag = currentIdx < tags.length - 1 ? tags[currentIdx + 1] : "";
 
 console.log(`Previous tag: ${prevTag || "none (first release)"}`);
 
-// Build conventional-changelog command for a specific range
+// Use conventional-changelog with proper configuration
 const preset = fs.existsSync(path.join(process.cwd(), ".versionrc.json"))
   ? "-p conventionalcommits"
   : "-p conventionalcommits";
 
-// Generate the changelog for this specific tag range only
 let changelogContent = "";
 
 if (prevTag) {
-  // Generate changelog for the specific range using git range
+  // Generate changelog for the specific range using conventional-changelog
   console.log(`Generating changelog from ${prevTag} to ${currentTag}`);
   
   try {
-    // Use git log to get commits in range and pipe to conventional-changelog
+    // Check if there are commits in the range
     const commits = sh(`git rev-list ${prevTag}..${currentTag} --reverse`).split('\n').filter(Boolean);
     
     if (commits.length === 0) {
       console.log("No commits found between tags, creating empty changelog entry.");
       const versionWithoutV = currentTag.replace(/^v/, '');
       const today = new Date().toISOString().split('T')[0];
-      changelogContent = `## [${versionWithoutV}] - ${today}\n\n*No changes*\n\n`;
+      changelogContent = `## [${versionWithoutV}] - ${today}\n\n*No notable changes*\n\n`;
     } else {
-      console.log(`Found ${commits.length} commits, generating changelog...`);
+      console.log(`Found ${commits.length} commits, generating changelog with conventional-changelog...`);
       
-      // Skip conventional-changelog and use manual parsing for better reliability
-      console.log("Using manual commit parsing for reliable changelog generation...");
+      // Use conventional-changelog to generate changelog for the last 2 releases
+      // This approach works without needing git checkout and captures commits properly
+      const cmd = `npx conventional-changelog ${preset} --pkg package.json -r 2`;
+      console.log(`Running: ${cmd}`);
       
-      // Parse commits manually and format them
-      const gitLog = sh(`git log ${prevTag}..${currentTag} --pretty=format:"%s|||%h|||%H" --reverse`);
-      const commitLines = gitLog.split('\n').filter(Boolean);
+      const conventionalOutput = sh(cmd);
       
-      const features = [];
-      const fixes = [];
-      const performance = [];
-      const docs = [];
-      const refactoring = [];
-      const others = [];
-      
-      commitLines.forEach(commitLine => {
-        const [message, shortHash, fullHash] = commitLine.split('|||');
-        const link = `([${shortHash}](https://github.com/AndreaRettaroliPostNL/demo-release-changelog/commit/${fullHash}))`;
+      if (conventionalOutput && conventionalOutput.trim()) {
+        console.log("✅ conventional-changelog succeeded!");
         
-        if (message.startsWith('feat')) {
-          const cleanMessage = message.replace(/^feat(\([^)]*\))?\s*:\s*/, '');
-          const scope = message.match(/^feat\(([^)]*)\)/)?.[1];
-          features.push(scope ? `* **${scope}:** ${cleanMessage} ${link}` : `* ${cleanMessage} ${link}`);
-        } else if (message.startsWith('fix')) {
-          const cleanMessage = message.replace(/^fix(\([^)]*\))?\s*:\s*/, '');
-          const scope = message.match(/^fix\(([^)]*)\)/)?.[1];
-          fixes.push(scope ? `* **${scope}:** ${cleanMessage} ${link}` : `* ${cleanMessage} ${link}`);
-        } else if (message.startsWith('perf')) {
-          const cleanMessage = message.replace(/^perf(\([^)]*\))?\s*:\s*/, '');
-          const scope = message.match(/^perf\(([^)]*)\)/)?.[1];
-          performance.push(scope ? `* **${scope}:** ${cleanMessage} ${link}` : `* ${cleanMessage} ${link}`);
-        } else if (message.startsWith('docs')) {
-          const cleanMessage = message.replace(/^docs(\([^)]*\))?\s*:\s*/, '');
-          const scope = message.match(/^docs\(([^)]*)\)/)?.[1];
-          // Skip changelog documentation commits
-          if (!cleanMessage.toLowerCase().includes('changelog') && !cleanMessage.toLowerCase().includes('update for v')) {
-            docs.push(scope ? `* **${scope}:** ${cleanMessage} ${link}` : `* ${cleanMessage} ${link}`);
+        // Extract only the section for our target version
+        const versionWithoutV = currentTag.replace(/^v/, '');
+        const lines = conventionalOutput.split('\n');
+        let inTargetVersion = false;
+        let targetVersionLines = [];
+        
+        for (const line of lines) {
+          // Check if this is the start of our target version
+          if (line.includes(`[${versionWithoutV}]`) && line.startsWith('## ')) {
+            inTargetVersion = true;
+            // Fix the header format
+            const today = new Date().toISOString().split('T')[0];
+            targetVersionLines.push(`## [${versionWithoutV}] - ${today}`);
+            continue;
           }
-        } else if (message.startsWith('refactor')) {
-          const cleanMessage = message.replace(/^refactor(\([^)]*\))?\s*:\s*/, '');
-          const scope = message.match(/^refactor\(([^)]*)\)/)?.[1];
-          refactoring.push(scope ? `* **${scope}:** ${cleanMessage} ${link}` : `* ${cleanMessage} ${link}`);
-        } else if (!message.startsWith('Merge') && !message.startsWith('docs(changelog)')) {
-          // Include other commits that don't match conventional patterns (including chore)
-          others.push(`* ${message} ${link}`);
+          
+          // Check if this is the start of a different version (stop collecting)
+          // Skip empty version headers like ## []
+          if (line.startsWith('## [') && !line.includes(`[${versionWithoutV}]`) && !line.includes('## []')) {
+            break;
+          }
+          
+          // Collect lines for our target version
+          if (inTargetVersion) {
+            targetVersionLines.push(line);
+          }
         }
-      });
-      
-      // Build the changelog content
-      const versionWithoutV = currentTag.replace(/^v/, '');
-      const today = new Date().toISOString().split('T')[0];
-      let sections = [`## [${versionWithoutV}] - ${today}`, ''];
-      
-      if (features.length > 0) {
-        sections.push('### Features', '', ...features, '');
+        
+        if (targetVersionLines.length > 1) {
+          changelogContent = targetVersionLines.join('\n').trim();
+          console.log("Changelog content extracted successfully from conventional-changelog");
+        } else {
+          console.log("Target version not found in conventional-changelog output, creating empty entry");
+          const today = new Date().toISOString().split('T')[0];
+          changelogContent = `## [${versionWithoutV}] - ${today}\n\n*No notable changes*\n\n`;
+        }
+      } else {
+        console.log("conventional-changelog produced no output, creating empty entry");
+        const versionWithoutV = currentTag.replace(/^v/, '');
+        const today = new Date().toISOString().split('T')[0];
+        changelogContent = `## [${versionWithoutV}] - ${today}\n\n*No notable changes*\n\n`;
       }
-      
-      if (fixes.length > 0) {
-        sections.push('### Bug Fixes', '', ...fixes, '');
-      }
-      
-      if (performance.length > 0) {
-        sections.push('### Performance', '', ...performance, '');
-      }
-      
-      if (docs.length > 0) {
-        sections.push('### Documentation', '', ...docs, '');
-      }
-      
-      if (refactoring.length > 0) {
-        sections.push('### Refactoring', '', ...refactoring, '');
-      }
-      
-      if (others.length > 0) {
-        sections.push('### Other Changes', '', ...others, '');
-      }
-      
-      if (features.length === 0 && fixes.length === 0 && performance.length === 0 && 
-          docs.length === 0 && refactoring.length === 0 && others.length === 0) {
-        sections.push('*No notable changes*', '');
-      }
-      
-      changelogContent = sections.join('\n');
     }
   } catch (error) {
-    console.error("Error getting commits:", error.message);
+    console.error("Error generating changelog with conventional-changelog:", error.message);
     process.exit(1);
   }
 } else {
-  // First release, generate full changelog
+  // First release, generate full changelog using conventional-changelog
+  console.log("First release detected, generating full changelog...");
   const cmd = `npx conventional-changelog ${preset} -i CHANGELOG.md -s -r 0`;
   console.log(`Running: ${cmd}`);
   
   try {
     sh(cmd);
     console.log("CHANGELOG.md updated successfully for first release.");
-    return;
+    process.exit(0);
   } catch (error) {
     console.error("Error generating changelog:", error.message);
     process.exit(1);
@@ -214,12 +184,28 @@ if (changelogContent) {
   }
   
   // Remove any duplicate entries for the same version
-  const filteredLines = lines.filter(line => {
+  const filteredLines = [];
+  let skipSection = false;
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    
+    // Check if this is the start of the version we're adding
     if (line.startsWith(`## [${versionWithoutV}]`) || line.startsWith(`## ${versionWithoutV}`)) {
-      return false;
+      skipSection = true;
+      continue;
     }
-    return true;
-  });
+    
+    // Check if this is the start of a different version section
+    if (line.startsWith('## [') && !line.startsWith(`## [${versionWithoutV}]`)) {
+      skipSection = false;
+    }
+    
+    // Only add lines if we're not skipping this section
+    if (!skipSection) {
+      filteredLines.push(line);
+    }
+  }
   
   // Insert the new changelog content
   filteredLines.splice(insertIndex, 0, '', cleanContent, '');
