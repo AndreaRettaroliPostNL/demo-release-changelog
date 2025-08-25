@@ -11,22 +11,44 @@ jobs:
   changelog:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout full history
+      - name: Checkout default branch (full history)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: ${{ github.event.repository.default_branch }}
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
+      - name: Generate CHANGELOG for this release tag (explicit range)
+        env:
+          CUR: ${{ github.event.release.tag_name }}   # e.g., v0.0.3
+        run: |
+          # Ensure tags are present
+          git fetch --tags --force
 
-      - name: Install deps
-        run: npm ci
+          if ! git rev-parse "$CUR" >/dev/null 2>&1; then
+            echo "Tag $CUR not found locally."
+            exit 1
+          fi
 
-      - name: Generate CHANGELOG for the latest tag
-        run: npx conventional-changelog -p conventionalcommits -i CHANGELOG.md -s -r 1 --tag-prefix "v"
+          # Find previous semver tag (sorted by version)
+          PREV=$(git tag --list --sort=-v:refname | awk -v cur="$CUR" '$0==cur{getline; print; exit}')
+          echo "Current tag: $CUR"
+          echo "Previous tag: ${PREV:-<none>}"
+
+          # Detect tag prefix (e.g., 'v' in v0.0.3)
+          PREFIX=$(echo "$CUR" | sed -E 's/^([^0-9]*).*/\1/')
+
+          # Generate/update CHANGELOG.md for the exact range
+          if [ -n "$PREV" ]; then
+            npx -y conventional-changelog -p conventionalcommits -i CHANGELOG.md -s \
+              --from "$PREV" --to "$CUR" \
+              --tag "$CUR" \
+              --tag-prefix "$PREFIX"
+          else
+            # First release: generate notes up to CUR
+            npx -y conventional-changelog -p conventionalcommits -i CHANGELOG.md -s \
+              --tag "$CUR" \
+              --tag-prefix "$PREFIX"
+          fi
 
       - name: Commit changelog
         run: |
@@ -36,12 +58,11 @@ jobs:
           git commit -m "docs(changelog): update for ${{ github.event.release.tag_name }}" || echo "No changes"
           git push origin HEAD:${{ github.event.repository.default_branch }}
 
-      # Optional: update the Release notes body to match the same content
       - name: Update GitHub Release body with latest section
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ github.event.release.tag_name }}
         run: |
-          # Extract topmost version section from the changelog and set as release body
+          # Grab the newest section (from first '## ' to next '## ')
           awk 'BEGIN{p=0} /^## /{if(p) exit; p=1} {if(p) print}' CHANGELOG.md > .notes.md
           gh release edit "$TAG" --notes-file .notes.md
