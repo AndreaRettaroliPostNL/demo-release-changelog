@@ -25,11 +25,8 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Generate CHANGELOG.md for this tag
-        env:
-          GITHUB_REF_NAME: ${{ github.event.release.tag_name }}
-        run: |
-          node .github/scripts/changelog-from.js
+      - name: Generate CHANGELOG for the latest tag
+        run: npx conventional-changelog -p conventionalcommits -i CHANGELOG.md -s -r 1 --tag-prefix "v"
 
       - name: Commit changelog
         run: |
